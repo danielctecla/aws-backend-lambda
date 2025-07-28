@@ -1,0 +1,12 @@
+{
+  "name": "health-check",
+  "version": "1.0.0", 
+  "description": "Health check endpoint",
+  "main": "src/index.js",
+  "dependencies": {
+    
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}

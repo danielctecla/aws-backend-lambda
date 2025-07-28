@@ -1,0 +1,74 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  test:
+    uses: ./.github/workflows/test.yml
+
+  deploy:
+    needs: test
+    if: success()
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🏗️ Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: ⚡ Setup AWS SAM
+        uses: aws-actions/setup-sam@v2
+
+      - name: 🔐 Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_PROD }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_PROD }}
+          aws-region: ${{ secrets.AWS_REGION_PROD }}
+
+      - name: ✅ Ensure S3 bucket exists
+        run: |
+          aws s3api head-bucket --bucket practipuma-v2-sam-deployments-prod 2>/dev/null || \
+          aws s3 mb s3://practipuma-v2-sam-deployments-prod --region ${{ secrets.AWS_REGION_PROD }}
+
+      - name: 📦 Cache Lambda dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            lambdas/*/node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - name: 📦 Install dependencies
+        run: |
+          echo "🔧 Installing root dependencies..."
+          npm ci
+          echo "🔧 Installing Lambda dependencies..."
+          for dir in lambdas/*/; do
+            if [ -f "$dir/package.json" ]; then
+              echo "📦 Installing dependencies for $dir"
+              cd "$dir" && npm ci && cd ../..
+            fi
+          done
+
+      - name: ✅ Validate SAM template
+        run: sam validate --template infrastructure/template.yml --region ${{ secrets.AWS_REGION_PROD }}
+
+      - name: 🚀 Build and Deploy
+        run: |
+          sam build --template infrastructure/template.yml
+          sam deploy --no-confirm-changeset --no-fail-on-empty-changeset \
+            --stack-name practipuma-v2-prod \
+            --capabilities CAPABILITY_IAM \
+            --region ${{ secrets.AWS_REGION_PROD }} \
+            --s3-bucket practipuma-v2-sam-deployments-prod \
+            --parameter-overrides Environment=prod
