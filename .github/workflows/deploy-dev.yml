@@ -46,10 +46,13 @@ jobs:
       #       fi
       #     done
 
-      - name: Install layer dependencies # ← Solo agregar esto
+      - name: Install layer dependencies
         run: |
           cd layers/backend-utils
           npm ci
+          # Crear la carpeta nodejs/node_modules si no existe
+          mkdir -p nodejs/node_modules
+          cp -r node_modules/* nodejs/node_modules/
 
       - name: Validate SAM template
         run: sam validate --template infrastructure/template.yml --region ${{ secrets.AWS_REGION_DEV }}
