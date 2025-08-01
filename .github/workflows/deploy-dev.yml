@@ -37,14 +37,19 @@ jobs:
           aws s3api head-bucket --bucket practipuma-v2-sam-deployments-dev 2>/dev/null || \
           aws s3 mb s3://practipuma-v2-sam-deployments-dev --region ${{ secrets.AWS_REGION_DEV }}
 
-      - name: Install dependencies
+      # - name: Install dependencies
+      #   run: |
+      #     npm install
+      #     for dir in lambdas/*/; do
+      #       if [ -f "$dir/package.json" ]; then
+      #         cd "$dir" && npm install && cd ../..
+      #       fi
+      #     done
+
+      - name: Install layer dependencies # ← Solo agregar esto
         run: |
-          npm install
-          for dir in lambdas/*/; do
-            if [ -f "$dir/package.json" ]; then
-              cd "$dir" && npm install && cd ../..
-            fi
-          done
+          cd layers/backend-utils
+          npm ci
 
       - name: Validate SAM template
         run: sam validate --template infrastructure/template.yml --region ${{ secrets.AWS_REGION_DEV }}
@@ -57,4 +62,8 @@ jobs:
             --capabilities CAPABILITY_IAM \
             --region ${{ secrets.AWS_REGION_DEV }} \
             --s3-bucket practipuma-v2-sam-deployments-dev \
-            --parameter-overrides Environment=dev
+            --parameter-overrides \
+              "Environment=dev \
+              StripeSecretKey=${{ secrets.STRIPE_SECRET_KEY_DEV }} \
+              SupabaseUrl=${{ secrets.SUPABASE_URL_DEV }} \
+              SupabaseAnonKey=${{ secrets.SUPABASE_ANON_KEY_DEV }}"

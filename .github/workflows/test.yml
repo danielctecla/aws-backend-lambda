@@ -34,13 +34,13 @@ jobs:
           set -e
           echo "🔧 Installing root dependencies..."
           npm ci
-          echo "🔧 Installing Lambda dependencies..."
-          for dir in lambdas/*/; do
-            if [ -f "$dir/package.json" ]; then
-              echo "📦 Installing dependencies in $dir"
-              cd "$dir" && npm ci && cd ../..
-            fi
-          done
+      #     echo "🔧 Installing Lambda dependencies..."
+      #     for dir in lambdas/*/; do
+      #       if [ -f "$dir/package.json" ]; then
+      #         echo "📦 Installing dependencies in $dir"
+      #         cd "$dir" && npm ci && cd ../..
+      #       fi
+      #     done
 
       - name: 🔍 Run linting
         run: npm run lint

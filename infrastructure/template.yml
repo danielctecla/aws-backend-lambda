@@ -11,6 +11,23 @@ Parameters:
     Default: prod
     Description: Environment name (dev/prod)
 
+  StripeSecretKey:
+    Type: String
+    NoEcho: true
+    Description: Stripe Secret Key
+    Default: ""
+
+  SupabaseUrl:
+    Type: String
+    Description: Supabase Project URL
+    Default: ""
+
+  SupabaseAnonKey:
+    Type: String
+    NoEcho: true
+    Description: Supabase Anonymous Key
+    Default: ""
+
 Globals:
   Function:
     Runtime: nodejs22.x
@@ -19,8 +36,26 @@ Globals:
     Environment:
       Variables:
         ENVIRONMENT: !Ref Environment
+        STRIPE_SECRET_KEY: !Ref StripeSecretKey
+        SUPABASE_URL: !Ref SupabaseUrl
+        SUPABASE_ANON_KEY: !Ref SupabaseAnonKey
+    Layers:
+      - !Ref BackendUtilsLayer
 
 Resources:
+  # Layer compartido con utilidades, Stripe y Supabase
+  BackendUtilsLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: !Sub "backend-node-utils-${Environment}"
+      Description: "Shared utilities, Stripe and Supabase for Lambda functions"
+      ContentUri: ../layers/backend-utils/
+      CompatibleRuntimes:
+        - nodejs22.x
+      RetentionPolicy: Delete
+    Metadata:
+      BuildMethod: nodejs22.x
+
   # API Gateway
   ApiGateway:
     Type: AWS::Serverless::Api
@@ -34,7 +69,7 @@ Resources:
         AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
         AllowOrigin: "'*'"
 
-  # Lambda: health-check (Node.js 22)
+  # Lambda: health-check
   HealthCheckFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -47,6 +82,21 @@ Resources:
           Properties:
             RestApiId: !Ref ApiGateway
             Path: /health
+            Method: get
+
+  # Lambda: stripe-products
+  StripeProductsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "stripe-products-${Environment}"
+      CodeUri: ../lambdas/stripe.products/
+      Handler: src/index.handler
+      Events:
+        GetProducts:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /subscription/products
             Method: get
 
 Outputs:

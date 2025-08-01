@@ -1,0 +1,9 @@
+{
+  "name": "backend-utils-layer",
+  "version": "1.0.0",
+  "description": "Shared utilities, Stripe and Supabase for Lambda functions",
+  "dependencies": {
+    "stripe": "^14.21.0",
+    "@supabase/supabase-js": "^2.39.3"
+  }
+}
