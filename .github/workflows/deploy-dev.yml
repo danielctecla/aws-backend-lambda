@@ -50,9 +50,6 @@ jobs:
         run: |
           cd layers/backend-utils
           npm ci
-          # Crear node_modules dentro de nodejs/
-          mkdir -p nodejs/node_modules
-          cp -r node_modules/* nodejs/node_modules/
 
       - name: Validate SAM template
         run: sam validate --template infrastructure/template.yml --region ${{ secrets.AWS_REGION_DEV }}
