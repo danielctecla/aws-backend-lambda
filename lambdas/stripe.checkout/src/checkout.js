@@ -97,7 +97,11 @@ class CheckoutService {
             await this.stripe.customers.del(createdCustomer.id);
             await this.supabase
               .from('user_subscription')
-              .update({ customer_id: null, plan_snapshot: null, modified_at: new Date().toISOString()})
+              .update({ 
+                customer_id: null, 
+                plan_snapshot: null, 
+                modified_at: new Date().toISOString()
+              })
               .eq('user_id', user.id);
           }
         };
@@ -231,7 +235,9 @@ class CheckoutService {
 
       // Filter by open sessions with same price_id
       const activeSessions = sessions.data.filter(session => {
-        if (session.status !== 'open') return false;
+        if (session.status !== 'open') {
+          return false;
+        }
         
         // Check if any line_item has the same price_id
         return session.line_items?.data?.some(item => item.price?.id === priceId) ||
@@ -256,7 +262,10 @@ class CheckoutService {
     try {
       // Only check existing sessions if checkExisting is true
       if (checkExisting) {
-        const existingSession = await this.checkExistingCheckoutSession(customerId, checkoutData.price_id);
+        const existingSession = await this.checkExistingCheckoutSession(
+          customerId, 
+          checkoutData.price_id
+        );
         
         if (existingSession) {
           return {
@@ -321,7 +330,10 @@ class CheckoutService {
       }
 
       // 2. Handle user and customer according to new flow
-      userSubscriptionData = await this.handleUserSubscription(authResult.user, checkoutData.price_id);
+      userSubscriptionData = await this.handleUserSubscription(
+        authResult.user, 
+        checkoutData.price_id
+      );
 
       // 3. Create checkout session (only check existing sessions if user already existed)
       const shouldCheckExisting = userSubscriptionData.action === 'existing';
