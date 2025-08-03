@@ -1,10 +1,10 @@
 /**
- * Crea una respuesta HTTP estandarizada para Lambda
- * @param {number} statusCode - Código de estado HTTP
- * @param {string} message - Mensaje descriptivo
- * @param {Object} [data] - Datos opcionales para incluir en la respuesta
- * @param {Object} [headers] - Headers adicionales opcionales
- * @returns {Object} Respuesta formateada para API Gateway
+ * Creates a standardized HTTP response for Lambda
+ * @param {number} statusCode - HTTP status code
+ * @param {string} message - Descriptive message
+ * @param {Object} [data] - Optional data to include in response
+ * @param {Object} [headers] - Optional additional headers
+ * @returns {Object} Formatted response for API Gateway
  */
 const customResponse = (statusCode, message, data = null, headers = {}) => {
   const defaultHeaders = {

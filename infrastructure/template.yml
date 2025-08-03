@@ -99,6 +99,27 @@ Resources:
             Path: /subscription/products
             Method: get
 
+  # Lambda: stripe-checkout
+  StripeCheckoutFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "stripe-checkout-${Environment}"
+      CodeUri: ../lambdas/stripe.checkout/
+      Handler: src/index.handler
+      Events:
+        CreateCheckoutSession:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /checkout/sessions
+            Method: post
+        GetCheckoutSession:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /checkout/sessions/{session_id}
+            Method: get
+
 Outputs:
   ApiGatewayUrl:
     Description: URL del API Gateway

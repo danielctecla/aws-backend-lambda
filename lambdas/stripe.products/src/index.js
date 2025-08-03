@@ -23,7 +23,7 @@ exports.handler = async () => {
           description: product.description,
           prices: prices.data.map(price => ({
             id: price.id,
-            amount: price.unit_amount / 100, // Convert to mxn
+            amount: price.unit_amount / 100, // Convert to currency units
             currency: price.currency,
             recurring: {
               interval: price.recurring.interval,

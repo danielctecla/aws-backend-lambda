@@ -3,8 +3,8 @@ const Stripe = require('stripe');
 let stripeInstance = null;
 
 /**
- * Obtiene una instancia configurada de Stripe
- * @returns {Stripe} Instancia de Stripe configurada
+ * Gets a configured Stripe instance
+ * @returns {Stripe} Configured Stripe instance
  */
 const getStripe = () => {
   if (!stripeInstance) {

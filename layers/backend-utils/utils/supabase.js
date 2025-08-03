@@ -3,8 +3,8 @@ const { createClient } = require('@supabase/supabase-js');
 let supabaseInstance = null;
 
 /**
- * Obtiene una instancia configurada de Supabase
- * @returns {SupabaseClient} Cliente de Supabase configurado
+ * Gets a configured Supabase instance (admin client)
+ * @returns {SupabaseClient} Configured Supabase client
  */
 const getSupabase = () => {
   if (!supabaseInstance) {
@@ -21,4 +21,6 @@ const getSupabase = () => {
   return supabaseInstance;
 };
 
-module.exports = { getSupabase };
+module.exports = { 
+  getSupabase
+};
