@@ -1,5 +1,5 @@
-// Mock the layer dependency before requiring the handler
-jest.doMock('/opt/nodejs/utils/response', () => ({
+// Mock the layer dependencies before requiring the handler
+jest.doMock('/opt/nodejs/presentation/response', () => ({
   customResponse: (statusCode, message, data = null, headers = {}) => {
     const defaultHeaders = {
       'Content-Type': 'application/json',
@@ -23,6 +23,30 @@ jest.doMock('/opt/nodejs/utils/response', () => ({
       body: JSON.stringify(responseBody)
     };
   }
+}), { virtual: true });
+
+jest.doMock('/opt/nodejs/presentation/controllers', () => ({
+  HealthController: jest.fn().mockImplementation(() => ({
+    healthCheck: jest.fn().mockResolvedValue({
+      statusCode: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
+        'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS'
+      },
+      body: JSON.stringify({
+        statusCode: 200,
+        message: 'Health check successful',
+        data: {
+          status: 'OK',
+          timestamp: new Date().toISOString()
+        }
+      })
+    })
+  })),
+  CheckoutController: jest.fn(),
+  ProductController: jest.fn()
 }), { virtual: true });
 
 const { handler } = require('../../lambdas/health.check/src/index');

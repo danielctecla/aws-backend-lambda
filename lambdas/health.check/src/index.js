@@ -1,8 +1,7 @@
-const { customResponse } = require('/opt/nodejs/utils/response');
+const { HealthController } = require('/opt/nodejs/presentation/controllers');
 
-exports.handler = async (event) => {
-    return customResponse(200, 'Health check successful', {
-        status: 'OK',
-        timestamp: new Date().toISOString()
-    });
+const healthController = new HealthController();
+
+exports.handler = async () => {
+    return await healthController.healthCheck();
 };

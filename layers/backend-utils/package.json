@@ -2,6 +2,21 @@
   "name": "backend-utils-layer",
   "version": "1.0.0",
   "description": "Shared utilities, Stripe and Supabase for Lambda functions",
+  "exports": {
+    "./domain/*": "./domain/*/index.js",
+    "./domain/entities": "./domain/entities/index.js",
+    "./domain/errors": "./domain/errors/index.js",
+    "./domain/value-objects": "./domain/value-objects/index.js",
+    "./application/*": "./application/*/index.js",
+    "./application/dtos": "./application/dtos/index.js",
+    "./application/use-cases/auth": "./application/use-cases/auth/index.js",
+    "./application/use-cases/subscription": "./application/use-cases/subscription/index.js",
+    "./application/use-cases/catalog": "./application/use-cases/catalog/index.js",
+    "./infrastructure/adapters": "./infrastructure/adapters/index.js",
+    "./infrastructure/clients": "./infrastructure/clients/index.js",
+    "./presentation/controllers": "./presentation/controllers/index.js",
+    "./presentation/response": "./presentation/response.js"
+  },
   "dependencies": {
     "stripe": "^14.21.0",
     "@supabase/supabase-js": "^2.39.3"
