@@ -1,9 +1,7 @@
 const { StripePaymentGateway } = require('./StripePaymentGateway');
 const { StripeProductRepository } = require('./StripeProductRepository');
-const { 
-  SupabaseSessionValidator, 
-  SupabaseSubscriptionRepository 
-} = require('./SupabaseUserRepository');
+const { SupabaseSubscriptionRepository } = require('./SupabaseSubscriptionRepository');
+const { SupabaseSessionValidator } = require('./SupabaseSessionValidator');
 
 module.exports = {
   StripePaymentGateway,

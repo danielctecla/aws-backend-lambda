@@ -6,11 +6,19 @@ class ISubscriptionRepository {
     throw new Error('Method not implemented');
   }
 
+  async findByCustomerId(customerId) {
+    throw new Error('Method not implemented');
+  }
+
   async create(subscription) {
     throw new Error('Method not implemented');
   }
 
   async update(subscription) {
+    throw new Error('Method not implemented');
+  }
+
+  async updateByCustomerId(customerId, updates) {
     throw new Error('Method not implemented');
   }
 }
