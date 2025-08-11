@@ -288,7 +288,7 @@ class CheckoutService {
         payment_method_types: ['card'],
         line_items: [{ price: checkoutData.price_id, quantity: checkoutData.quantity }],
         mode: 'subscription',
-        success_url: checkoutData.success_url,
+        success_url: `${checkoutData.success_url}/{CHECKOUT_SESSION_ID}`,
         cancel_url: checkoutData.cancel_url,
         customer: customerId,
         metadata: {
