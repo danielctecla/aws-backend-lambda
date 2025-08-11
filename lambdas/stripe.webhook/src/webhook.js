@@ -332,6 +332,7 @@ class WebhookService {
         .from('user_subscription')
         .update({
           is_active: false,
+          cancel_at_period_end: false, // Reset the flag since cancellation is now complete
           end_date: new Date(subscription.canceled_at ? subscription.canceled_at * 1000 : Date.now()),
           modified_at: new Date()
         })
@@ -433,6 +434,23 @@ class WebhookService {
         attempt_count: invoice.attempt_count,
         next_payment_attempt: invoice.next_payment_attempt
       });
+
+      // Update payment status - set subscription as active and update next payment date
+      const { error } = await this.supabase
+        .from('user_subscription')
+        .update({
+          is_active: false,
+          modified_at: new Date()
+        })
+        .eq('customer_id', customerId);
+
+      if (error) {
+        await this.logEvent('ERROR', 'payment_handler', 'Database error updating payment success', {
+          invoice_id: invoice.id,
+          error: error.message
+        });
+        throw new Error(`Database error: ${error.message}`);
+      }
 
       return {
         status: 'success',

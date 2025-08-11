@@ -157,6 +157,12 @@ Resources:
             RestApiId: !Ref ApiGateway
             Path: /subscription/{userId}
             Method: get
+        DeleteUserSubscription:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /subscription/{userId}
+            Method: delete
 
 Outputs:
   ApiGatewayUrl:
