@@ -28,6 +28,12 @@ Parameters:
     Description: Supabase Anonymous Key
     Default: ""
 
+  StripeWebhookSecret:
+    Type: String
+    NoEcho: true
+    Description: Stripe Webhook Endpoint Secret
+    Default: ""
+
 Globals:
   Function:
     Runtime: nodejs22.x
@@ -37,6 +43,7 @@ Globals:
       Variables:
         ENVIRONMENT: !Ref Environment
         STRIPE_SECRET_KEY: !Ref StripeSecretKey
+        STRIPE_WEBHOOK_SECRET: !Ref StripeWebhookSecret
         SUPABASE_URL: !Ref SupabaseUrl
         SUPABASE_ANON_KEY: !Ref SupabaseAnonKey
     Layers:
@@ -118,6 +125,37 @@ Resources:
           Properties:
             RestApiId: !Ref ApiGateway
             Path: /checkout/sessions/{session_id}
+            Method: get
+
+  # Lambda: stripe-webhook
+  StripeWebhookFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "stripe-webhook-${Environment}"
+      CodeUri: ../lambdas/stripe.webhook/
+      Handler: src/index.handler
+      Timeout: 30
+      Events:
+        StripeWebhook:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /webhooks/stripe
+            Method: post
+
+  # Lambda: user-subscription
+  UserSubscriptionFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "user-subscription-${Environment}"
+      CodeUri: ../lambdas/user.subscription/
+      Handler: src/index.handler
+      Events:
+        GetUserSubscription:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /subscription/{userId}
             Method: get
 
 Outputs:

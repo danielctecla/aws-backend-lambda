@@ -8,6 +8,7 @@ class CheckoutService {
   constructor() {
     this.stripe = getStripe();
     this.supabase = getSupabase();
+    this.isProduction = process.env.ENVIRONMENT === 'prod';
   }
 
   /**
@@ -72,7 +73,7 @@ class CheckoutService {
       createdCustomer = await this.stripe.customers.create({
         email: user.email,
         name: user.user_metadata.full_name || user.email,
-        metadata: { supabase_user_id: user.id }
+        metadata: { user_id: user.id }
       });
 
       // CASE 2: User exists but doesn't have customer_id
@@ -82,7 +83,8 @@ class CheckoutService {
           .update({ 
             customer_id: createdCustomer.id,
             plan_snapshot: planSnapshot,
-            modified_at: new Date().toISOString()
+            modified_at: new Date().toISOString(),
+            production: this.isProduction
           })
           .eq('user_id', user.id);
 
@@ -100,7 +102,8 @@ class CheckoutService {
               .update({ 
                 customer_id: null, 
                 plan_snapshot: null, 
-                modified_at: new Date().toISOString()
+                modified_at: new Date().toISOString(),
+                production: this.isProduction
               })
               .eq('user_id', user.id);
           }
