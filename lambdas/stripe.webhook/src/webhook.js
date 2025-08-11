@@ -192,6 +192,7 @@ class WebhookService {
       
       // Update existing subscription based on customer_id (customer_id is unique)
       const updateData = {
+        stripe_subscription_id: subscription.id,
         price_id: priceId,
         plan_snapshot: planSnapshot,
         start_date: new Date(subscription.current_period_start * 1000),
@@ -268,6 +269,7 @@ class WebhookService {
       }
 
       const updateData = {
+        stripe_subscription_id: subscription.id,
         end_date: new Date(subscription.current_period_end * 1000),
         next_payment_date: new Date(subscription.current_period_end * 1000),
         is_active: subscription.status === 'active',
