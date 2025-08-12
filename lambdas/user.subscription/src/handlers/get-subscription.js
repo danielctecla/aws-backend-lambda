@@ -8,6 +8,7 @@ class GetSubscriptionService {
   constructor() {
     this.supabase = getSupabase();
     this.stripe = getStripe();
+    this.isProduction = process.env.ENVIRONMENT === 'prod';
   }
 
   /**
@@ -17,26 +18,33 @@ class GetSubscriptionService {
    */
   async getUserSubscription(userId) {
     try {
+
       const { data: subscription, error } = await this.supabase
         .from('user_subscription')
         .select('price_id, start_date, end_date, next_payment_date, stripe_subscription_id, cancel_at_period_end')
         .eq('user_id', userId)
+        .eq('production', this.isProduction)
         .single();
-
-      const { data: info_subscription, error: infoSubscriptionError } = await this.supabase
-      .from('subscription_plans')
-      .select('name, currency, price, interval, stripe_product_id')
-      .eq('price_id', subscription.price_id)
-      .single();
 
       if (error && error.code !== 'PGRST116') {
         throw new Error(`Database error: ${error.message}`);
-      } else if (infoSubscriptionError && infoSubscriptionError.code !== 'PGRST116') {
-        throw new Error(`Subscription info error: ${infoSubscriptionError.message}`);
-      }
-      
+      } 
 
       if (!subscription) {
+        return null;
+      }
+
+      const { data: info_subscription, error: infoSubscriptionError } = await this.supabase
+        .from('subscription_plans')
+        .select('name, currency, price, interval, stripe_product_id')
+        .eq('price_id', subscription.price_id)
+        .single();
+
+      if (infoSubscriptionError && infoSubscriptionError.code !== 'PGRST116') {
+        throw new Error(`Subscription info error: ${infoSubscriptionError.message}`);
+      }
+
+      if (!info_subscription) {
         return null;
       }
 

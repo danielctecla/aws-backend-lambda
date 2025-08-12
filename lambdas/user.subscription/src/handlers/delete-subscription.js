@@ -8,6 +8,7 @@ class DeleteSubscriptionService {
   constructor() {
     this.supabase = getSupabase();
     this.stripe = getStripe();
+    this.isProduction = process.env.ENVIRONMENT === 'prod';
   }
 
   /**
@@ -24,6 +25,7 @@ class DeleteSubscriptionService {
         .from('user_subscription')
         .select('stripe_subscription_id, customer_id, is_active')
         .eq('user_id', userId)
+        .eq('production', this.isProduction)
         .single();
 
       if (error && error.code !== 'PGRST116') {
@@ -53,10 +55,10 @@ class DeleteSubscriptionService {
         .from('user_subscription')
         .update({
           cancel_at_period_end: true,
-          // Keep is_active: true until the period actually ends
           modified_at: new Date()
         })
-        .eq('user_id', userId);
+        .eq('user_id', userId)
+        .eq('production', this.isProduction);
 
       if (updateError) {
         console.error('Error updating database after cancellation:', updateError);
