@@ -21,7 +21,13 @@ class GetSubscriptionService {
 
       const { data: subscription, error } = await this.supabase
         .from('user_subscription')
-        .select('price_id, start_date, end_date, next_payment_date, stripe_subscription_id, cancel_at_period_end')
+        .select(`
+          price_id, start_date, 
+          end_date, 
+          next_payment_date, 
+          stripe_subscription_id, 
+          cancel_at_period_end
+        `)
         .eq('user_id', userId)
         .eq('production', this.isProduction)
         .single();
@@ -86,7 +92,9 @@ class GetSubscriptionService {
       // If no payment method on subscription, check the customer
       if (!paymentMethodId && subscription.customer) {
         const customer = await this.stripe.customers.retrieve(subscription.customer);
-        console.log('Customer default payment method:', customer.invoice_settings?.default_payment_method);
+        console.log('Customer default payment method:', 
+          customer.invoice_settings?.default_payment_method
+        );
         paymentMethodId = customer.invoice_settings?.default_payment_method;
         
         // If still no payment method, get the latest invoice to find payment method
@@ -153,7 +161,9 @@ async function handleGetSubscription(event, service, authResult, requestedUserId
   }
 
   if (subscription.stripe_subscription_id) {
-    const paymentMethod = await service.getSubscriptionPaymentMethod(subscription.stripe_subscription_id);
+    const paymentMethod = await service.getSubscriptionPaymentMethod(
+      subscription.stripe_subscription_id
+    );
     subscription.payment_method = paymentMethod;
   } else {
     subscription.payment_method = { error: 'No stripe subscription ID found' };

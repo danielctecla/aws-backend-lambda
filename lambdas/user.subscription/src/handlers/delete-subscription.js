@@ -45,9 +45,11 @@ class DeleteSubscriptionService {
       }
 
       // Cancel subscription at period end in Stripe
-      const updatedSubscription = await this.stripe.subscriptions.update(subscription.stripe_subscription_id, {
-        cancel_at_period_end: true
-      });
+      const updatedSubscription = await this.stripe.subscriptions.update(
+        subscription.stripe_subscription_id, {
+          cancel_at_period_end: true
+        }
+      );
       console.log('Stripe subscription set to cancel at period end:', updatedSubscription.id);
 
       // Update database - mark as pending cancellation but keep active until period ends

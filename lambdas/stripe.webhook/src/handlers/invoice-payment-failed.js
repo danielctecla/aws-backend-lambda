@@ -48,12 +48,17 @@ class InvoicePaymentFailedHandler {
 
       // For now, we don't deactivate subscription on first payment failure
       // Stripe will retry automatically, so we just log the failure
-      await this.logEvent('WARN', 'payment_handler', 'Payment failed - subscription remains active', {
-        invoice_id: invoice.id,
-        customer_id: customerId,
-        attempt_count: invoice.attempt_count,
-        next_payment_attempt: invoice.next_payment_attempt
-      });
+      await this.logEvent(
+        'WARN', 
+        'payment_handler', 
+        'Payment failed - subscription remains active', 
+        {
+          invoice_id: invoice.id,
+          customer_id: customerId,
+          attempt_count: invoice.attempt_count,
+          next_payment_attempt: invoice.next_payment_attempt
+        }
+      );
 
       // Update payment status - set subscription as inactive on payment failure
       const { error } = await this.supabase

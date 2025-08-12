@@ -84,10 +84,15 @@ class SubscriptionCreatedHandler {
         .eq('customer_id', customerId);
 
       if (error) {
-        await this.logEvent('ERROR', 'subscription_handler', 'Database error creating subscription', {
-          subscription_id: subscription.id,
-          error: error.message
-        });
+        await this.logEvent(
+          'ERROR', 
+          'subscription_handler', 
+          'Database error creating subscription', 
+          {
+            subscription_id: subscription.id,
+            error: error.message
+          }
+        );
         throw new Error(`Database error: ${error.message}`);
       }
 

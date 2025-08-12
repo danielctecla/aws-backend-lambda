@@ -50,16 +50,25 @@ class SubscriptionDeletedHandler {
         .update({
           is_active: false,
           cancel_at_period_end: false, // Reset the flag since cancellation is now complete
-          end_date: new Date(subscription.canceled_at ? subscription.canceled_at * 1000 : Date.now()),
+          end_date: new Date(
+            subscription.canceled_at ? 
+              subscription.canceled_at * 1000 : 
+              Date.now()
+          ),
           modified_at: new Date()
         })
         .eq('customer_id', customerId);
 
       if (error) {
-        await this.logEvent('ERROR', 'subscription_handler', 'Database error deleting subscription', {
-          subscription_id: subscription.id,
-          error: error.message
-        });
+        await this.logEvent(
+          'ERROR', 
+          'subscription_handler', 
+          'Database error deleting subscription', 
+          {
+            subscription_id: subscription.id,
+            error: error.message
+          }
+        );
         throw new Error(`Database error: ${error.message}`);
       }
 
