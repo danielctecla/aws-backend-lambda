@@ -2,9 +2,9 @@ const { getStripe } = require('/opt/nodejs/utils/stripe');
 const { getSupabase } = require('/opt/nodejs/utils/supabase');
 
 /**
- * Service to handle checkout operations
+ * Service to handle checkout session creation
  */
-class CheckoutService {
+class CreateCheckoutSessionService {
   constructor() {
     this.stripe = getStripe();
     this.supabase = getSupabase();
@@ -32,6 +32,60 @@ class CheckoutService {
       return { isValid: true, user };
     } catch (error) {
       return { isValid: false, error: 'Session validation failed' };
+    }
+  }
+
+  /**
+   * Validates input data for creating a checkout session
+   * @param {Object} data - Session data
+   * @returns {Object} Validated data or errors
+   */
+  validateCheckoutData(data) {
+    const errors = [];
+    
+    if (!data.price_id) {
+      errors.push('price_id is required');
+    }
+    
+    if (!data.success_url) {
+      errors.push('success_url is required');
+    }
+    
+    if (!data.cancel_url) {
+      errors.push('cancel_url is required');
+    }
+
+    return {
+      isValid: errors.length === 0,
+      errors,
+      data: {
+        price_id: data.price_id,
+        success_url: data.success_url,
+        cancel_url: data.cancel_url,
+        quantity: data.quantity || 1
+      }
+    };
+  }
+
+  /**
+   * Gets subscription plan information
+   * @param {string} priceId - Stripe price ID
+   * @returns {Promise<Object>} Plan information
+   */
+  async getPlanSnapshot(priceId) {
+    try {
+      const price = await this.stripe.prices.retrieve(priceId, { expand: ['product'] });
+      return {
+        price_id: price.id,
+        product_name: price.product.name,
+        amount: price.unit_amount,
+        currency: price.currency,
+        interval: price.recurring?.interval,
+        interval_count: price.recurring?.interval_count,
+        metadata: price.product.metadata
+      };
+    } catch (error) {
+      throw new Error(`Failed to retrieve plan information: ${error.message}`);
     }
   }
 
@@ -146,83 +200,6 @@ class CheckoutService {
   }
 
   /**
-   * Gets subscription plan information
-   * @param {string} priceId - Stripe price ID
-   * @returns {Promise<Object>} Plan information
-   */
-  async getPlanSnapshot(priceId) {
-    try {
-      
-      // todo: Anon key cannot access subscription_plans table directly
-      // // Try to get from DB first
-      // const { data: plan } = await this.supabase
-      //   .from('subscription_plans')
-      //   .select('*')
-      //   .eq('price_id', priceId)
-      //   .single();
-
-      // if (plan) return plan;
-
-      // Fallback to Stripe
-
-      const price = await this.stripe.prices.retrieve(priceId, { expand: ['product'] });
-      return {
-        price_id: price.id,
-        product_name: price.product.name,
-        amount: price.unit_amount,
-        currency: price.currency,
-        interval: price.recurring?.interval,
-        interval_count: price.recurring?.interval_count,
-        metadata: price.product.metadata
-      };
-    } catch (error) {
-      throw new Error(`Failed to retrieve plan information: ${error.message}`);
-    }
-  }
-
-  /**
-   * Validates input data for creating a checkout session
-   * @param {Object} data - Session data
-   * @returns {Object} Validated data or errors
-   */
-  validateCheckoutData(data) {
-    const errors = [];
-    
-    if (!data.price_id) {
-      errors.push('price_id is required');
-    }
-    
-    if (!data.success_url) {
-      errors.push('success_url is required');
-    }
-    
-    if (!data.cancel_url) {
-      errors.push('cancel_url is required');
-    }
-
-    return {
-      isValid: errors.length === 0,
-      errors,
-      data: {
-        price_id: data.price_id,
-        success_url: data.success_url,
-        cancel_url: data.cancel_url,
-        quantity: data.quantity || 1
-      }
-    };
-  }
-
-  /**
-   * Validates email format
-   * @param {string} email - Email to validate
-   * @returns {boolean} True if valid
-   */
-  isValidEmail(email) {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  }
-
-  /**
    * Checks if an active checkout session exists for customer and price_id
    * @param {string} customerId - Stripe customer ID
    * @param {string} priceId - Price ID
@@ -230,19 +207,16 @@ class CheckoutService {
    */
   async checkExistingCheckoutSession(customerId, priceId) {
     try {
-      // Search for active customer sessions
       const sessions = await this.stripe.checkout.sessions.list({
         customer: customerId,
         limit: 10
       });
 
-      // Filter by open sessions with same price_id
       const activeSessions = sessions.data.filter(session => {
         if (session.status !== 'open') {
           return false;
         }
         
-        // Check if any line_item has the same price_id
         return session.line_items?.data?.some(item => item.price?.id === priceId) ||
                session.metadata?.price_id === priceId;
       });
@@ -250,7 +224,7 @@ class CheckoutService {
       return activeSessions.length > 0 ? activeSessions[0] : null;
     } catch (error) {
       console.error('Error checking existing sessions:', error);
-      return null; // In case of error, allow creating new session
+      return null;
     }
   }
 
@@ -263,7 +237,6 @@ class CheckoutService {
    */
   async createCheckoutSession(checkoutData, customerId, checkExisting = false) {
     try {
-      // Only check existing sessions if checkExisting is true
       if (checkExisting) {
         const existingSession = await this.checkExistingCheckoutSession(
           customerId, 
@@ -278,12 +251,11 @@ class CheckoutService {
               status: existingSession.status,
               payment_status: existingSession.payment_status
             },
-            rollback: async () => {} // No rollback for existing session
+            rollback: async () => {}
           };
         }
       }
 
-      // Create new session
       const session = await this.stripe.checkout.sessions.create({
         payment_method_types: ['card'],
         line_items: [{ price: checkoutData.price_id, quantity: checkoutData.quantity }],
@@ -293,7 +265,7 @@ class CheckoutService {
         customer: customerId,
         metadata: {
           ...checkoutData.metadata,
-          price_id: checkoutData.price_id // Add price_id to metadata for future searches
+          price_id: checkoutData.price_id
         }
       });
       
@@ -338,7 +310,7 @@ class CheckoutService {
         checkoutData.price_id
       );
 
-      // 3. Create checkout session (only check existing sessions if user already existed)
+      // 3. Create checkout session
       const shouldCheckExisting = userSubscriptionData.action === 'existing';
       sessionData = await this.createCheckoutSession({
         ...checkoutData,
@@ -355,7 +327,6 @@ class CheckoutService {
       };
 
     } catch (error) {
-      // Rollback in case of error
       if (sessionData?.rollback) {
         await sessionData.rollback();
       }
@@ -367,27 +338,52 @@ class CheckoutService {
       throw error;
     }
   }
-
-  /**
-   * Gets checkout session information
-   * @param {string} sessionId - Session ID
-   * @returns {Promise<Object>} Session information
-   */
-  async getCheckoutSession(sessionId) {
-    try {
-      const session = await this.stripe.checkout.sessions.retrieve(sessionId);
-      
-      return {
-        id: session.id,
-        status: session.status,
-        payment_status: session.payment_status,
-        customer_email: session.customer_email,
-        url: session.url
-      };
-    } catch (error) {
-      throw new Error(`Failed to retrieve checkout session: ${error.message}`);
-    }
-  }
 }
 
-module.exports = { CheckoutService };
+/**
+ * Handles POST /checkout - Create checkout session
+ */
+async function handleCreateCheckoutSession(event) {
+  const service = new CreateCheckoutSessionService();
+
+  // Get authorization token
+  const authToken = event.headers?.Authorization || event.headers?.authorization;
+  
+  if (!authToken) {
+    return {
+      statusCode: 401,
+      message: 'Authorization token is required'
+    };
+  }
+
+  // Parse request body
+  const requestBody = JSON.parse(event.body || '{}');
+
+  // Validate input data
+  const validation = service.validateCheckoutData(requestBody);
+  
+  if (!validation.isValid) {
+    return {
+      statusCode: 400,
+      message: 'Validation errors',
+      data: { errors: validation.errors }
+    };
+  }
+
+  // Process complete checkout with authentication and transaction handling
+  const result = await service.processCheckout(validation.data, authToken);
+
+  return {
+    statusCode: 201,
+    message: 'Checkout session created successfully',
+    data: {
+      session_id: result.session.id,
+      checkout_url: result.session.url,
+      status: result.session.status,
+      customer_id: result.customer_id,
+      action: result.action
+    }
+  };
+}
+
+module.exports = { CreateCheckoutSessionService, handleCreateCheckoutSession };
