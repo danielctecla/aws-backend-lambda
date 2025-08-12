@@ -160,13 +160,13 @@ async function handleGetSubscription(event, service, authResult, requestedUserId
     return { statusCode: 404, message: 'No subscription found for this user' };
   }
 
-  if (subscription.stripe_subscription_id) {
+  if (subscription.subscription_id) {
     const paymentMethod = await service.getSubscriptionPaymentMethod(
-      subscription.stripe_subscription_id
+      subscription.subscription_id
     );
     subscription.payment_method = paymentMethod;
   } else {
-    subscription.payment_method = { error: 'No stripe subscription ID found' };
+    subscription.payment_method = { error: 'No subscription ID found' };
   }
 
   return {
