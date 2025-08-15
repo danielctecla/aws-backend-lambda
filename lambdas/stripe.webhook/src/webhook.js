@@ -99,7 +99,8 @@ class WebhookService {
         event_id: event.id,
         event_type: event.type,
         api_version: event.api_version,
-        created: new Date(event.created * 1000).toISOString()
+        created: new Date(event.created * 1000).toISOString(),
+        raw_event: JSON.stringify(event)
       });
     } catch (error) {
       await this.logEvent('ERROR', 'webhook_record', 'Error recording processed event', { event_id: event.id, error: error.message });
