@@ -47,7 +47,7 @@ class GetBillingHistoryService {
 
     // Remove quantity and price info, keep only plan name
     let planName = description.replace(/^\d+\s*×\s*/, ''); // Remove "1 × "
-    planName = planName.replace(/\s*\(at\s*\$[\d.,]+\s*\/\s*\w+\)/, ''); // Remove "(at $65.00 / month)"
+    planName = planName.replace(/\s*\(at\s*\$[\d.,]+\s*\/\s*\w+\)/, '');
     
     // Clean up common English words
     planName = planName.replace(/\s*\/\s*(month|year|week|day)/, '');
