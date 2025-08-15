@@ -1,9 +1,35 @@
+const { getSupabase } = require('/opt/nodejs/utils/supabase');
+
+/**
+ * Utility function to safely convert Unix timestamp to Date
+ * @param {number|null|undefined} timestamp - Unix timestamp
+ * @param {string} fieldName - Name of the field for logging
+ * @returns {Date|null}
+ */
+function safeTimestampToDate(timestamp, fieldName) {
+  if (!timestamp || timestamp === 0) {
+    console.warn(`Invalid timestamp for ${fieldName}: ${timestamp}`);
+    return null;
+  }
+  
+  try {
+    const date = new Date(timestamp * 1000);
+    if (isNaN(date.getTime())) {
+      console.warn(`Invalid date created for ${fieldName}: ${timestamp}`);
+      return null;
+    }
+    return date;
+  } catch (error) {
+    console.error(`Error converting timestamp to date for ${fieldName}:`, error);
+    return null;
+  }
+}
+
 /**
  * Handles subscription update events
  */
 class SubscriptionUpdatedHandler {
   constructor() {
-    this.stripe = getStripe();
     this.supabase = getSupabase();
     this.isProduction = process.env.ENVIRONMENT === 'prod';
   }
@@ -40,7 +66,9 @@ class SubscriptionUpdatedHandler {
       const changes = Object.keys(previousAttributes);
       
       // LOGGING CRÍTICO: Ver los valores raw que llegan de Stripe
-      await this.logEvent('DEBUG', 'subscription_handler_update', 'Raw subscription data from Stripe', {
+      await this.logEvent('DEBUG', 
+        'subscription_handler_update', 
+        'Raw subscription data from Stripe', {
         subscription_id: subscription.id,
         customer_id: customerId,
         status: subscription.status,

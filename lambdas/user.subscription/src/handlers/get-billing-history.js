@@ -41,8 +41,10 @@ class GetBillingHistoryService {
    * @returns {string} Spanish description
    */
   translatePlanDescription(description) {
-    if (!description) return 'PractiPuma Pro';
-    
+    if (!description) {
+      return 'PractiPuma Pro';
+    }
+
     // Remove quantity and price info, keep only plan name
     let planName = description.replace(/^\d+\s*×\s*/, ''); // Remove "1 × "
     planName = planName.replace(/\s*\(at\s*\$[\d.,]+\s*\/\s*\w+\)/, ''); // Remove "(at $65.00 / month)"
@@ -84,7 +86,9 @@ class GetBillingHistoryService {
         period_start: new Date(invoice.period_start * 1000),
         period_end: new Date(invoice.period_end * 1000),
         status: invoice.status === 'paid' ? 'Pagado' : 'Procesando',
-        paid_at: invoice.status_transitions?.paid_at ? new Date(invoice.status_transitions.paid_at * 1000) : null,
+        paid_at: invoice.status_transitions?.paid_at ? 
+          new Date(invoice.status_transitions.paid_at * 1000) : 
+          null,
       }));
 
       return billingHistory;

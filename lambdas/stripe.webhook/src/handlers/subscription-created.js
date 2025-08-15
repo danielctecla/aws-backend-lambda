@@ -92,7 +92,9 @@ class SubscriptionCreatedHandler {
       // CONVERSIÓN SEGURA DE FECHAS
       const startDate = safeTimestampToDate(subscription.current_period_start, 'start_date');
       const endDate = safeTimestampToDate(subscription.current_period_end, 'end_date');
-      const nextPaymentDate = safeTimestampToDate(subscription.current_period_end, 'next_payment_date');
+      const nextPaymentDate = safeTimestampToDate(
+        subscription.current_period_end, 'next_payment_date'
+      );
 
       // LOGGING CRÍTICO: Ver las fechas convertidas
       await this.logEvent('DEBUG', 'subscription_handler', 'Converted dates', {
@@ -166,3 +168,5 @@ class SubscriptionCreatedHandler {
     }
   }
 }
+
+module.exports = { SubscriptionCreatedHandler };
