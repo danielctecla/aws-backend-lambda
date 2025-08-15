@@ -2,6 +2,31 @@ const { getStripe } = require('/opt/nodejs/utils/stripe');
 const { getSupabase } = require('/opt/nodejs/utils/supabase');
 
 /**
+ * Utility function to safely convert Unix timestamp to Date
+ * @param {number|null|undefined} timestamp - Unix timestamp
+ * @param {string} fieldName - Name of the field for logging
+ * @returns {Date|null}
+ */
+function safeTimestampToDate(timestamp, fieldName) {
+  if (!timestamp || timestamp === 0) {
+    console.warn(`Invalid timestamp for ${fieldName}: ${timestamp}`);
+    return null;
+  }
+  
+  try {
+    const date = new Date(timestamp * 1000);
+    if (isNaN(date.getTime())) {
+      console.warn(`Invalid date created for ${fieldName}: ${timestamp}`);
+      return null;
+    }
+    return date;
+  } catch (error) {
+    console.error(`Error converting timestamp to date for ${fieldName}:`, error);
+    return null;
+  }
+}
+
+/**
  * Handles subscription creation events
  */
 class SubscriptionCreatedHandler {
@@ -11,14 +36,6 @@ class SubscriptionCreatedHandler {
     this.isProduction = process.env.ENVIRONMENT === 'prod';
   }
 
-  /**
-   * Logs events to system_logs table
-   * @param {string} level - Log level (INFO, ERROR, WARN)
-   * @param {string} component - Component name
-   * @param {string} message - Log message
-   * @param {Object} context - Additional context data
-   * @returns {Promise<void>}
-   */
   async logEvent(level, component, message, context = {}) {
     try {
       const { error } = await this.supabase
@@ -38,11 +55,19 @@ class SubscriptionCreatedHandler {
     }
   }
 
-  /**
-   * Handles subscription creation
-   */
   async handle(subscription, customerId) {
     try {
+      // LOGGING CRÍTICO: Ver los valores raw que llegan de Stripe
+      await this.logEvent('DEBUG', 'subscription_handler', 'Raw subscription data from Stripe', {
+        subscription_id: subscription.id,
+        customer_id: customerId,
+        status: subscription.status,
+        current_period_start_raw: subscription.current_period_start,
+        current_period_end_raw: subscription.current_period_end,
+        current_period_start_type: typeof subscription.current_period_start,
+        current_period_end_type: typeof subscription.current_period_end
+      });
+
       await this.logEvent('INFO', 'subscription_handler', 'Processing subscription created', {
         subscription_id: subscription.id,
         customer_id: customerId
@@ -64,19 +89,43 @@ class SubscriptionCreatedHandler {
         product_id: price.product
       } : null;
       
+      // CONVERSIÓN SEGURA DE FECHAS
+      const startDate = safeTimestampToDate(subscription.current_period_start, 'start_date');
+      const endDate = safeTimestampToDate(subscription.current_period_end, 'end_date');
+      const nextPaymentDate = safeTimestampToDate(subscription.current_period_end, 'next_payment_date');
+
+      // LOGGING CRÍTICO: Ver las fechas convertidas
+      await this.logEvent('DEBUG', 'subscription_handler', 'Converted dates', {
+        subscription_id: subscription.id,
+        start_date_converted: startDate?.toISOString() || 'NULL',
+        end_date_converted: endDate?.toISOString() || 'NULL',
+        next_payment_date_converted: nextPaymentDate?.toISOString() || 'NULL'
+      });
+      
       // Update existing subscription based on customer_id (customer_id is unique)
       const updateData = {
         stripe_subscription_id: subscription.id,
         price_id: priceId,
         plan_snapshot: planSnapshot,
-        start_date: new Date(subscription.current_period_start * 1000),
-        end_date: new Date(subscription.current_period_end * 1000),
-        next_payment_date: new Date(subscription.current_period_end * 1000),
+        start_date: startDate,
+        end_date: endDate,
+        next_payment_date: nextPaymentDate,
         is_active: subscription.status === 'active',
         cancel_at_period_end: subscription.cancel_at_period_end || false,
         production: this.isProduction,
         modified_at: new Date()
       };
+
+      // LOGGING CRÍTICO: Ver exactamente qué se va a guardar
+      await this.logEvent('DEBUG', 'subscription_handler', 'About to update database with', {
+        subscription_id: subscription.id,
+        updateData: {
+          ...updateData,
+          start_date: updateData.start_date?.toISOString() || 'NULL',
+          end_date: updateData.end_date?.toISOString() || 'NULL',
+          next_payment_date: updateData.next_payment_date?.toISOString() || 'NULL'
+        }
+      });
       
       const { error } = await this.supabase
         .from('user_subscription')
@@ -117,5 +166,3 @@ class SubscriptionCreatedHandler {
     }
   }
 }
-
-module.exports = { SubscriptionCreatedHandler };

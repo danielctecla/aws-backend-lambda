@@ -4,6 +4,7 @@ const { customResponse } = require('/opt/nodejs/utils/response');
 // Import handlers
 const { GetSubscriptionService, handleGetSubscription } = require('./handlers/get-subscription');
 const { DeleteSubscriptionService, handleDeleteSubscription } = require('./handlers/delete-subscription');
+const { GetBillingHistoryService, handleGetBillingHistory } = require('./handlers/get-billing-history');
 
 /**
  * Validates Supabase authorization token
@@ -35,7 +36,7 @@ async function validateSupabaseSession(authToken) {
  */
 exports.handler = async (event) => {
   try {
-    const { httpMethod, pathParameters, headers } = event;
+    const { httpMethod, pathParameters, headers, resource } = event;
     const authToken = headers.Authorization || headers.authorization;
     const requestedUserId = pathParameters?.userId;
 
@@ -51,20 +52,26 @@ exports.handler = async (event) => {
 
     let result;
 
-    // Route to appropriate handler based on HTTP method
-    switch (httpMethod) {
-      case 'GET':
-        const getService = new GetSubscriptionService();
-        result = await handleGetSubscription(event, getService, authResult, requestedUserId);
-        break;
-        
-      case 'DELETE':
-        const deleteService = new DeleteSubscriptionService();
-        result = await handleDeleteSubscription(event, deleteService, authResult, requestedUserId);
-        break;
-        
-      default:
-        return customResponse(405, 'Method not allowed');
+    // Route based on resource path and HTTP method
+    if (resource === '/subscription/{userId}/billing-history' && httpMethod === 'GET') {
+      const billingService = new GetBillingHistoryService();
+      result = await handleGetBillingHistory(event, billingService, authResult, requestedUserId);
+    } else {
+      // Route to appropriate handler based on HTTP method for /subscription/{userId}
+      switch (httpMethod) {
+        case 'GET':
+          const getService = new GetSubscriptionService();
+          result = await handleGetSubscription(event, getService, authResult, requestedUserId);
+          break;
+          
+        case 'DELETE':
+          const deleteService = new DeleteSubscriptionService();
+          result = await handleDeleteSubscription(event, deleteService, authResult, requestedUserId);
+          break;
+          
+        default:
+          return customResponse(405, 'Method not allowed');
+      }
     }
 
     return customResponse(result.statusCode, result.message, result.data);

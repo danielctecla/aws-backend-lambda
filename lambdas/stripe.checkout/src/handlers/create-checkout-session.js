@@ -116,6 +116,11 @@ class CreateCheckoutSessionService {
 
       // CASE 1: User exists and has customer_id
       if (existingUser && existingUser.customer_id) {
+        // Check if user already has an active subscription
+        if (existingUser.is_active && existingUser.stripe_subscription_id) {
+          throw new Error('User already has an active subscription');
+        }
+        
         return {
           customerId: existingUser.customer_id,
           action: 'existing',

@@ -51,6 +51,14 @@ exports.handler = async (event) => {
       );
     }
 
+    if (error.message.includes('User already has an active subscription')) {
+      return customResponse(
+        409,
+        'User already has an active subscription',
+        null
+      );
+    }
+
     if (error.message.includes('No such checkout session')) {
       return customResponse(
         404,

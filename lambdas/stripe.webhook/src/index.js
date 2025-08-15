@@ -92,6 +92,25 @@ exports.handler = async (event) => {
     // Process the webhook event
     let result;
     try {
+      console.log(`About to process subscription event: ${stripeEvent.type} (${stripeEvent.id})`);
+      
+      // Safely log event data avoiding circular references
+      try {
+        const eventData = {
+          id: stripeEvent.data.object.id,
+          status: stripeEvent.data.object.status,
+          customer: stripeEvent.data.object.customer,
+          items: stripeEvent.data.object.items?.data?.map(item => ({
+            id: item.id,
+            price_id: item.price?.id,
+            quantity: item.quantity
+          }))
+        };
+        console.log('Event data object:', JSON.stringify(eventData, null, 2));
+      } catch (logError) {
+        console.log('Event data object: [Complex object - unable to stringify safely]');
+      }
+      
       result = await webhookService.handleSubscriptionEvent(stripeEvent);
       
       // Record successful processing

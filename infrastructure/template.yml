@@ -163,6 +163,12 @@ Resources:
             RestApiId: !Ref ApiGateway
             Path: /subscription/{userId}
             Method: delete
+        GetUserBillingHistory:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /subscription/{userId}/billing-history
+            Method: get
 
 Outputs:
   ApiGatewayUrl:
