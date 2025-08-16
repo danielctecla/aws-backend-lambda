@@ -120,6 +120,9 @@ class SubscriptionUpdatedHandler {
         stripe_subscription_id: subscription.id,
         is_active: subscription.status === 'active',
         cancel_at_period_end: subscription.cancel_at_period_end || false,
+        start_date: new Date(subscription.items.data[0]?.current_period_start * 1000),
+        end_date: new Date(subscription.items.data[0]?.current_period_end * 1000),
+        next_payment_date: new Date(subscription.items.data[0]?.current_period_end * 1000),
         modified_at: new Date()
       };
 
@@ -128,10 +131,6 @@ class SubscriptionUpdatedHandler {
           changes.includes('current_period_start') || 
           changes.includes('current_period_end') ||
           changes.includes('status')) {
-        
-        updateData.start_date = startDate;
-        updateData.end_date = endDate;
-        updateData.next_payment_date = nextPaymentDate;
         
         await this.logEvent('INFO', 'subscription_handler', 'Updating subscription dates', {
           subscription_id: subscription.id,
@@ -151,12 +150,12 @@ class SubscriptionUpdatedHandler {
       // LOGGING CRÍTICO: Ver exactamente qué se va a guardar
       await this.logEvent('DEBUG', 'subscription_handler_update', 'About to update database with', {
         subscription_id: subscription.id,
-        updateData: {
-          ...updateData,
-          start_date: updateData.start_date?.toISOString() || 'NULL',
-          end_date: updateData.end_date?.toISOString() || 'NULL',
-          next_payment_date: updateData.next_payment_date?.toISOString() || 'NULL'
-        }
+        // updateData: {
+        //   ...updateData,
+        //   start_date: new Date(subscription.items.data[0]?.current_period_start * 1000),
+        //   end_date: new Date(subscription.items.data[0]?.current_period_end * 1000),
+        //   next_payment_date: new Date(subscription.items.data[0]?.current_period_end * 1000),
+        // }
       });
 
       // Update subscription by customer_id (unique identifier)

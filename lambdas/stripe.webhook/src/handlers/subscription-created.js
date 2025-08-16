@@ -62,10 +62,10 @@ class SubscriptionCreatedHandler {
         subscription_id: subscription.id,
         customer_id: customerId,
         status: subscription.status,
-        current_period_start_raw: subscription.current_period_start,
-        current_period_end_raw: subscription.current_period_end,
-        current_period_start_type: typeof subscription.current_period_start,
-        current_period_end_type: typeof subscription.current_period_end
+        current_period_start_raw: subscription.items.data[0]?.current_period_start,
+        current_period_end_raw: subscription.items.data[0]?.current_period_end,
+        current_period_start_type: typeof subscription.items.data[0]?.current_period_start,
+        current_period_end_type: typeof subscription.items.data[0]?.current_period_end
       });
 
       await this.logEvent('INFO', 'subscription_handler', 'Processing subscription created', {
@@ -109,9 +109,9 @@ class SubscriptionCreatedHandler {
         stripe_subscription_id: subscription.id,
         price_id: priceId,
         plan_snapshot: planSnapshot,
-        start_date: startDate,
-        end_date: endDate,
-        next_payment_date: nextPaymentDate,
+        start_date: new Date(subscription.items.data[0]?.current_period_start * 1000),
+        end_date: new Date(subscription.items.data[0]?.current_period_end * 1000),
+        next_payment_date: new Date(subscription.items.data[0]?.current_period_end * 1000),
         is_active: subscription.status === 'active',
         cancel_at_period_end: subscription.cancel_at_period_end || false,
         production: this.isProduction,

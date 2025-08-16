@@ -49,11 +49,18 @@ class GetBillingHistoryService {
     let planName = description.replace(/^\d+\s*×\s*/, ''); // Remove "1 × "
     planName = planName.replace(/\s*\(at\s*\$[\d.,]+\s*\/\s*\w+\)/, '');
     
-    // Clean up common English words
-    planName = planName.replace(/\s*\/\s*(month|year|week|day)/, '');
-    planName = planName.replace(/\s*per\s*(month|year|week|day)/, '');
+    // Translate time periods to Spanish
+    planName = planName.replace(/\s*\/\s*(month|monthly)/gi, ' Mensual');
+    planName = planName.replace(/\s*\/\s*(year|yearly|annual)/gi, ' Anual');
+    planName = planName.replace(/\s*\/\s*(week|weekly)/gi, ' Semanal');
+    planName = planName.replace(/\s*\/\s*(day|daily)/gi, ' Diario');
     
-    // Return cleaned plan name
+    planName = planName.replace(/\s*per\s*(month|monthly)/gi, ' Mensual');
+    planName = planName.replace(/\s*per\s*(year|yearly|annual)/gi, ' Anual');
+    planName = planName.replace(/\s*per\s*(week|weekly)/gi, ' Semanal');
+    planName = planName.replace(/\s*per\s*(day|daily)/gi, ' Diario');
+    
+    // Return translated plan name
     return planName.trim() || 'PractiPuma Pro';
   }
 
