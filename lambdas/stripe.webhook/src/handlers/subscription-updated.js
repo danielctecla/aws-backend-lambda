@@ -1,31 +1,6 @@
 const { getSupabase } = require('/opt/nodejs/utils/supabase');
 
 /**
- * Utility function to safely convert Unix timestamp to Date
- * @param {number|null|undefined} timestamp - Unix timestamp
- * @param {string} fieldName - Name of the field for logging
- * @returns {Date|null}
- */
-function safeTimestampToDate(timestamp, fieldName) {
-  if (!timestamp || timestamp === 0) {
-    console.warn(`Invalid timestamp for ${fieldName}: ${timestamp}`);
-    return null;
-  }
-  
-  try {
-    const date = new Date(timestamp * 1000);
-    if (isNaN(date.getTime())) {
-      console.warn(`Invalid date created for ${fieldName}: ${timestamp}`);
-      return null;
-    }
-    return date;
-  } catch (error) {
-    console.error(`Error converting timestamp to date for ${fieldName}:`, error);
-    return null;
-  }
-}
-
-/**
  * Handles subscription update events
  */
 class SubscriptionUpdatedHandler {
@@ -53,31 +28,10 @@ class SubscriptionUpdatedHandler {
     }
   }
 
-  calculateNextPaymentDate(subscription) {
-    if (!subscription.cancel_at_period_end && subscription.status === 'active') {
-      return safeTimestampToDate(subscription.current_period_end, 'next_payment_date');
-    }
-    return null;
-  }
-
   async handle(subscription, customerId, event) {
     try {
       const previousAttributes = event.data.previous_attributes || {};
       const changes = Object.keys(previousAttributes);
-      
-      // LOGGING CRÍTICO: Ver los valores raw que llegan de Stripe
-      await this.logEvent('DEBUG', 
-        'subscription_handler_update', 
-        'Raw subscription data from Stripe', {
-        subscription_id: subscription.id,
-        customer_id: customerId,
-        status: subscription.status,
-        current_period_start_raw: subscription.current_period_start,
-        current_period_end_raw: subscription.current_period_end,
-        current_period_start_type: typeof subscription.current_period_start,
-        current_period_end_type: typeof subscription.current_period_end,
-        changes: changes
-      });
       
       await this.logEvent('INFO', 'subscription_handler', 'Processing subscription updated', {
         subscription_id: subscription.id,
@@ -87,33 +41,20 @@ class SubscriptionUpdatedHandler {
       });
 
       // Get updated price details if price changed
-      const priceId = subscription.items.data[0]?.price?.id;
-      let planSnapshot = null;
+      // const priceId = subscription.items.data[0]?.price?.id;
+      // let planSnapshot = null;
       
-      if (changes.includes('items') && priceId) {
-        const price = await this.stripe.prices.retrieve(priceId);
-        planSnapshot = {
-          price_id: price.id,
-          amount: price.unit_amount,
-          currency: price.currency,
-          interval: price.recurring?.interval,
-          interval_count: price.recurring?.interval_count,
-          product_id: price.product
-        };
-      }
-
-      // CONVERSIÓN SEGURA DE FECHAS
-      const startDate = safeTimestampToDate(subscription.current_period_start, 'start_date');
-      const endDate = safeTimestampToDate(subscription.current_period_end, 'end_date');
-      const nextPaymentDate = this.calculateNextPaymentDate(subscription);
-
-      // LOGGING CRÍTICO: Ver las fechas convertidas
-      await this.logEvent('DEBUG', 'subscription_handler_update', 'Converted dates', {
-        subscription_id: subscription.id,
-        start_date_converted: startDate?.toISOString() || 'NULL',
-        end_date_converted: endDate?.toISOString() || 'NULL',
-        next_payment_date_converted: nextPaymentDate?.toISOString() || 'NULL'
-      });
+      // if (changes.includes('items') && priceId) {
+      //   const price = await this.stripe.prices.retrieve(priceId);
+      //   planSnapshot = {
+      //     price_id: price.id,
+      //     amount: price.unit_amount,
+      //     currency: price.currency,
+      //     interval: price.recurring?.interval,
+      //     interval_count: price.recurring?.interval_count,
+      //     product_id: price.product
+      //   };
+      // }
 
       // Preparar datos base para actualización
       const updateData = {
@@ -126,37 +67,12 @@ class SubscriptionUpdatedHandler {
         modified_at: new Date()
       };
 
-      // SIEMPRE actualizar las fechas si la suscripción está activa o si cambiaron los períodos
-      if (subscription.status === 'active' || 
-          changes.includes('current_period_start') || 
-          changes.includes('current_period_end') ||
-          changes.includes('status')) {
-        
-        await this.logEvent('INFO', 'subscription_handler', 'Updating subscription dates', {
-          subscription_id: subscription.id,
-          start_date: startDate?.toISOString() || 'NULL',
-          end_date: endDate?.toISOString() || 'NULL',
-          next_payment_date: nextPaymentDate?.toISOString() || 'NULL',
-          reason: 'Status active or period changed'
-        });
-      }
 
       // Solo actualizar price_id y plan_snapshot si cambiaron
-      if (priceId && changes.includes('items')) {
-        updateData.price_id = priceId;
-        updateData.plan_snapshot = planSnapshot;
-      }
-
-      // LOGGING CRÍTICO: Ver exactamente qué se va a guardar
-      await this.logEvent('DEBUG', 'subscription_handler_update', 'About to update database with', {
-        subscription_id: subscription.id,
-        // updateData: {
-        //   ...updateData,
-        //   start_date: new Date(subscription.items.data[0]?.current_period_start * 1000),
-        //   end_date: new Date(subscription.items.data[0]?.current_period_end * 1000),
-        //   next_payment_date: new Date(subscription.items.data[0]?.current_period_end * 1000),
-        // }
-      });
+      // if (priceId && changes.includes('items')) {
+      //   updateData.price_id = priceId;
+      //   updateData.plan_snapshot = planSnapshot;
+      // }
 
       // Update subscription by customer_id (unique identifier)
       const { error } = await this.supabase

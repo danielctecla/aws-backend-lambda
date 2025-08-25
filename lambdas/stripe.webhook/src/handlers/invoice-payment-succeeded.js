@@ -51,7 +51,6 @@ class InvoicePaymentSucceededHandler {
         .from('user_subscription')
         .update({
           is_active: true,
-          // next_payment_date: invoice.period_end ? new Date(invoice.period_end * 1000) : null,
           modified_at: new Date()
         })
         .eq('customer_id', customerId);
