@@ -90,8 +90,8 @@ class GetBillingHistoryService {
         plan_name: this.translatePlanDescription(invoice.lines.data[0]?.description),
         amount_paid: invoice.total / 100,
         currency: invoice.currency,
-        period_start: new Date(invoice.period_start * 1000),
-        period_end: new Date(invoice.period_end * 1000),
+        period_start: new Date(invoice.lines.data[0]?.period?.start * 1000),
+        period_end: new Date(invoice.lines.data[0]?.period?.end * 1000),
         status: invoice.status === 'paid' ? 'Pagado' : 'Procesando',
         paid_at: invoice.status_transitions?.paid_at ? 
           new Date(invoice.status_transitions.paid_at * 1000) : 
