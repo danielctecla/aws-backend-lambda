@@ -233,3 +233,7 @@ go-example-logs-api-extension/.idea/vcs.xml
 go-example-logs-api-extension/README.md
 kinesisfirehose-logs-extension-demo/run.sh
 kinesisfirehose-logs-extension-demo/bin/extensions/go-example-logs-api-extension
+
+# Node.js
+node_modules/
+*.env

@@ -1,0 +1,30 @@
+{
+  "name": "aws-backend-lambda-practipuma-v2",
+  "version": "1.0.0",
+  "scripts": {
+    "test": "jest",
+    "test:unit": "jest tests/unit",
+    "test:integration": "jest tests/integration", 
+    "test:coverage": "jest --coverage",
+    "lint": "eslint lambdas/*/src/**/*.js",
+    "lint:fix": "eslint lambdas/*/src/**/*.js --fix",
+    "install:lambdas": "./scripts/install-deps.sh",
+    "deploy:local": "sam local start-api",
+    "build": "sam build",
+    "validate": "sam validate --template infrastructure/template.yml"
+  },
+  "devDependencies": {
+    "eslint": "^9.32.0",
+    "jest": "^30.0.5",
+    "supertest": "^7.1.4",
+    "@jest/globals": "^30.0.5"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "collectCoverageFrom": [
+      "lambdas/*/src/**/*.js"
+    ],
+    "coverageDirectory": "coverage",
+    "testMatch": ["**/tests/**/*.test.js"]
+  }
+}

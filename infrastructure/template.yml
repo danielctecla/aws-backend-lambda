@@ -1,0 +1,178 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: API Gateway with multiple Lambdas - PP v2
+
+Parameters:
+  Environment:
+    Type: String
+    AllowedValues:
+      - dev
+      - prod
+    Default: prod
+    Description: Environment name (dev/prod)
+
+  StripeSecretKey:
+    Type: String
+    NoEcho: true
+    Description: Stripe Secret Key
+    Default: ""
+
+  SupabaseUrl:
+    Type: String
+    Description: Supabase Project URL
+    Default: ""
+
+  SupabaseAnonKey:
+    Type: String
+    NoEcho: true
+    Description: Supabase Anonymous Key
+    Default: ""
+
+  StripeWebhookSecret:
+    Type: String
+    NoEcho: true
+    Description: Stripe Webhook Endpoint Secret
+    Default: ""
+
+Globals:
+  Function:
+    Runtime: nodejs22.x
+    Timeout: 30
+    MemorySize: 256
+    Environment:
+      Variables:
+        ENVIRONMENT: !Ref Environment
+        STRIPE_SECRET_KEY: !Ref StripeSecretKey
+        STRIPE_WEBHOOK_SECRET: !Ref StripeWebhookSecret
+        SUPABASE_URL: !Ref SupabaseUrl
+        SUPABASE_ANON_KEY: !Ref SupabaseAnonKey
+    Layers:
+      - !Ref BackendUtilsLayer
+
+Resources:
+  # Layer compartido con utilidades, Stripe y Supabase
+  BackendUtilsLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: !Sub "backend-node-utils-${Environment}"
+      Description: "Shared utilities, Stripe and Supabase for Lambda functions"
+      ContentUri: ../layers/backend-utils/
+      CompatibleRuntimes:
+        - nodejs22.x
+      RetentionPolicy: Delete
+    Metadata:
+      BuildMethod: nodejs22.x
+
+  # API Gateway
+  ApiGateway:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: !Sub "pp-api-${Environment}"
+      StageName: !Ref Environment
+      EndpointConfiguration:
+        Type: REGIONAL
+      Cors:
+        AllowMethods: "'GET,POST,PUT,DELETE,OPTIONS'"
+        AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+        AllowOrigin: "'*'"
+
+  # Lambda: health-check
+  HealthCheckFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "health-check-${Environment}"
+      CodeUri: ../lambdas/health.check/
+      Handler: src/index.handler
+      Events:
+        GetHealth:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /health
+            Method: get
+
+  # Lambda: stripe-products
+  StripeProductsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "stripe-products-${Environment}"
+      CodeUri: ../lambdas/stripe.products/
+      Handler: src/index.handler
+      Events:
+        GetProducts:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /subscription/products
+            Method: get
+
+  # Lambda: stripe-checkout
+  StripeCheckoutFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "stripe-checkout-${Environment}"
+      CodeUri: ../lambdas/stripe.checkout/
+      Handler: src/index.handler
+      Events:
+        CreateCheckoutSession:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /checkout/sessions
+            Method: post
+        GetCheckoutSession:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /checkout/sessions/{session_id}
+            Method: get
+
+  # Lambda: stripe-webhook
+  StripeWebhookFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "stripe-webhook-${Environment}"
+      CodeUri: ../lambdas/stripe.webhook/
+      Handler: src/index.handler
+      Timeout: 30
+      Events:
+        StripeWebhook:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /webhooks/stripe
+            Method: post
+
+  # Lambda: user-subscription
+  UserSubscriptionFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "user-subscription-${Environment}"
+      CodeUri: ../lambdas/user.subscription/
+      Handler: src/index.handler
+      Events:
+        GetUserSubscription:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /subscription/{userId}
+            Method: get
+        DeleteUserSubscription:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /subscription/{userId}
+            Method: delete
+        GetUserBillingHistory:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /subscription/{userId}/billing-history
+            Method: get
+
+Outputs:
+  ApiGatewayUrl:
+    Description: URL del API Gateway
+    Value: !Sub "https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${Environment}"
+    Export:
+      Name: !Sub "${AWS::StackName}-ApiUrl"
