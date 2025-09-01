@@ -33,7 +33,11 @@ module.exports = {
     // Reglas adicionales de estilo
     'eqeqeq': 'error', // Usar `===` en lugar de `==`
     'curly': ['error', 'all'], // Obligatorio usar llaves `{}` para los bloques
-    'no-magic-numbers': ['warn', { 'ignoreArrayIndexes': true }], // Evita el uso de números mágicos (números sin significado claro)
+    'no-magic-numbers': ['warn', 
+      { 
+        'ignoreArrayIndexes': true, 'ignore': [0, 1] 
+      }
+    ], // Evita el uso de números mágicos (números sin significado claro)
     'brace-style': ['error', '1tbs'], // Estilo de llaves: "One True Brace Style"
     
     // Reglas adicionales para producción

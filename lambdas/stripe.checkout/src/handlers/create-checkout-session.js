@@ -30,7 +30,7 @@ class CreateCheckoutSessionService {
       }
 
       return { isValid: true, user };
-    } catch (error) {
+    } catch {
       return { isValid: false, error: 'Session validation failed' };
     }
   }
@@ -124,7 +124,7 @@ class CreateCheckoutSessionService {
         return {
           customerId: existingUser.customer_id,
           action: 'existing',
-          rollback: async () => {}
+          rollback: async () => Promise.resolve()
         };
       }
 
@@ -196,8 +196,11 @@ class CreateCheckoutSessionService {
       if (createdCustomer) {
         try {
           await this.stripe.customers.del(createdCustomer.id);
-        } catch (rollbackError) {
-          console.error('Auto-rollback error:', rollbackError);
+        // } catch (rollbackError) {
+        //   console.error('Auto-rollback error:', rollbackError);
+        // }
+        } catch { /* --- IGNORE --- */
+          // Ignore errors during rollback
         }
       }
       throw error;
@@ -227,8 +230,8 @@ class CreateCheckoutSessionService {
       });
 
       return activeSessions.length > 0 ? activeSessions[0] : null;
-    } catch (error) {
-      console.error('Error checking existing sessions:', error);
+    } catch {
+      // console.error('Error checking existing sessions:', error);
       return null;
     }
   }
@@ -256,7 +259,7 @@ class CreateCheckoutSessionService {
               status: existingSession.status,
               payment_status: existingSession.payment_status
             },
-            rollback: async () => {}
+            rollback: async () => Promise.resolve()
           };
         }
       }
