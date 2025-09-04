@@ -42,10 +42,9 @@ exports.handler = async () => {
     );
 
   } catch (error) {
-    console.error(error);
     return customResponse(
       500,
-      'Error retrieving products',
+      error.message || error.toString() || 'Error retrieving products',
       null
     );
   }

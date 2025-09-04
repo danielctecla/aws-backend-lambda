@@ -30,7 +30,7 @@ class GetCheckoutSessionService {
       }
 
       return { isValid: true, user };
-    } catch (error) {
+    } catch {
       return { isValid: false, error: 'Session validation failed' };
     }
   }
@@ -43,8 +43,6 @@ class GetCheckoutSessionService {
   async getCheckoutSession(sessionId) {
     try {
       const session = await this.stripe.checkout.sessions.retrieve(sessionId);
-      
-      console.log('Retrieved checkout session:', session);
 
       return {
         id: session.id,

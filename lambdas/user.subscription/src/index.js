@@ -78,6 +78,10 @@ exports.handler = async (event) => {
 
   } catch (error) {
     console.error('Subscription endpoint error:', error);
-    return customResponse(500, 'Internal server error', null);
+    return customResponse(
+      500,
+      error.message || error.toString() || 'Internal server error',
+      null
+    );
   }
 };

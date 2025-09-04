@@ -77,7 +77,7 @@ exports.handler = async (event) => {
 
     return customResponse(
       500,
-      'Internal server error',
+      error.message || error.toString() || 'Internal server error',
       null
     );
   }
