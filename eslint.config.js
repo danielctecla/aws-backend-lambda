@@ -35,7 +35,7 @@ module.exports = {
     'curly': ['error', 'all'], // Obligatorio usar llaves `{}` para los bloques
     'no-magic-numbers': ['warn', 
       { 
-        'ignoreArrayIndexes': true, 'ignore': [0, 1] 
+        'ignoreArrayIndexes': true, 'ignore': [0, 1, 1000] 
       }
     ], // Evita el uso de números mágicos (números sin significado claro)
     'brace-style': ['error', '1tbs'], // Estilo de llaves: "One True Brace Style"

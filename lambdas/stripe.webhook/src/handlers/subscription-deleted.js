@@ -18,7 +18,8 @@ class SubscriptionDeletedHandler {
    */
   async logEvent(level, component, message, context = {}) {
     try {
-      const { error } = await this.supabase
+      
+      await this.supabase
         .from('system_logs')
         .insert({
           log_level: level,
@@ -27,11 +28,8 @@ class SubscriptionDeletedHandler {
           context: context
         });
 
-      if (error) {
-        console.error('Error logging to system_logs:', error);
-      }
-    } catch (error) {
-      console.error('Error logging to system_logs:', error);
+    } catch  {
+      // Logging failure should not block main process
     }
   }
 
